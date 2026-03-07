@@ -35,6 +35,68 @@ Production-grade Terraform module for deploying AWS Aurora clusters with support
               +---------------------+
 ```
 
+### Component Diagram
+
+```mermaid
+flowchart TB
+    subgraph Global["Global Database"]
+        GC["Global Cluster\n(Cross-Region Failover)"]
+    end
+
+    subgraph Cluster["Aurora Cluster"]
+        WRITER["Writer Instance"]
+        READER["Reader Instance(s)\n(Auto-Scaling)"]
+        SV2["Serverless v2\n(Optional)"]
+    end
+
+    subgraph Connectivity["Connectivity"]
+        PROXY["RDS Proxy\n(Connection Pooling / TLS)"]
+        SG["Security Group\n(Least Privilege)"]
+        SUBNET["DB Subnet Group"]
+    end
+
+    subgraph Config["Configuration"]
+        CPG["Cluster Parameter\nGroup"]
+        IPG["Instance Parameter\nGroup"]
+    end
+
+    subgraph Monitoring["Observability"]
+        MON["Enhanced Monitoring\n& Performance Insights"]
+        CWA["CloudWatch Alarms"]
+        ACT["Activity Streams\n(Kinesis)"]
+    end
+
+    GC --> Cluster
+    PROXY --> WRITER
+    PROXY --> READER
+    WRITER --> SG
+    READER --> SG
+    SG --> SUBNET
+    Cluster --> CPG
+    Cluster --> IPG
+    Cluster --> MON
+    Cluster --> CWA
+    Cluster --> ACT
+
+    style Global fill:#DD344C,stroke:#DD344C,color:#fff
+    style Cluster fill:#FF9900,stroke:#FF9900,color:#fff
+    style Connectivity fill:#1A73E8,stroke:#1A73E8,color:#fff
+    style Config fill:#8C4FFF,stroke:#8C4FFF,color:#fff
+    style Monitoring fill:#3F8624,stroke:#3F8624,color:#fff
+    style GC fill:#DD344C,stroke:#b02a3d,color:#fff
+    style WRITER fill:#FF9900,stroke:#cc7a00,color:#fff
+    style READER fill:#FF9900,stroke:#cc7a00,color:#fff
+    style SV2 fill:#FF9900,stroke:#cc7a00,color:#fff
+    style PROXY fill:#1A73E8,stroke:#1459b3,color:#fff
+    style SG fill:#1A73E8,stroke:#1459b3,color:#fff
+    style SUBNET fill:#1A73E8,stroke:#1459b3,color:#fff
+    style CPG fill:#8C4FFF,stroke:#6b3dcc,color:#fff
+    style IPG fill:#8C4FFF,stroke:#6b3dcc,color:#fff
+    style MON fill:#3F8624,stroke:#2d6119,color:#fff
+    style CWA fill:#3F8624,stroke:#2d6119,color:#fff
+    style ACT fill:#3F8624,stroke:#2d6119,color:#fff
+```
+
 ## Features
 
 - **Multi-Engine Support**: Aurora MySQL and Aurora PostgreSQL
