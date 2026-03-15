@@ -1,0 +1,64 @@
+{
+  "repo": "terraform-aws-rds-aurora",
+  "generated": "2026-03-15",
+  "scores": {
+    "documentation": 7,
+    "maintainability": 8,
+    "security": 8,
+    "observability": 7,
+    "deployability": 8,
+    "portability": 6,
+    "testability": 7,
+    "scalability": 8,
+    "reusability": 7,
+    "production_readiness": 7
+  },
+  "overall": 7.3,
+  "top_gaps": [
+    "No .gitignore file present",
+    "No sub-modules for composability (monolithic structure)",
+    "No pre-commit hook configuration",
+    "Tests exist but lack integration/end-to-end coverage",
+    "No Makefile or Taskfile for local development",
+    "No architecture diagram in documentation",
+    "No cost estimation or Infracost integration",
+    "No automated security scanning (tfsec/checkov) in CI",
+    "No backup/restore validation tests",
+    "No dependency pinning beyond provider versions"
+  ],
+  "fixes_applied": [
+    "GitHub Actions CI workflow configured",
+    "Test infrastructure present (tests/ directory)",
+    "CONTRIBUTING.md present for contributor guidance",
+    "SECURITY.md present for vulnerability reporting",
+    "CODEOWNERS file established for review ownership",
+    ".editorconfig ensures consistent code formatting",
+    ".gitattributes for line ending normalization",
+    "LICENSE clearly defined",
+    "CHANGELOG.md tracks version history",
+    "Dedicated monitoring.tf and security.tf for separation of concerns"
+  ],
+  "remaining_risks": [
+    "Missing .gitignore could lead to .tfstate files being committed",
+    "No automated backup validation in tests",
+    "Monolithic module may be hard to extend for specific use cases",
+    "No failover testing automation"
+  ],
+  "roadmap": {
+    "30_day": [
+      "Create .gitignore with Terraform-standard exclusions",
+      "Add tfsec and checkov to CI pipeline",
+      "Add pre-commit hooks configuration"
+    ],
+    "60_day": [
+      "Extract proxy and monitoring into sub-modules",
+      "Add Terratest integration tests with assertions",
+      "Add Infracost integration for cost estimation"
+    ],
+    "90_day": [
+      "Implement automated failover testing",
+      "Add backup/restore validation tests",
+      "Create architecture diagram showing Aurora topology"
+    ]
+  }
+}

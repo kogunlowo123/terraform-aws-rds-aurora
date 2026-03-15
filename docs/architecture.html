@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>terraform-aws-rds-aurora | Architecture</title>
+<style>
+:root{--ink:#0b0c0b;--accent:#c8420a;--surface:#141514;--border:#2a2b2a;--text:#d4d4d4;--muted:#8a8a8a;--card:#1a1b1a;--success:#2ea043;--warn:#d29922;--info:#388bfd}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:15px;line-height:1.7;padding:0}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+header{border-bottom:2px solid var(--accent);padding:2rem 0;margin-bottom:3rem}
+header h1{font-size:1.8rem;color:#fff;margin-bottom:.5rem}
+header p{color:var(--muted);font-size:.95rem}
+h2{color:var(--accent);font-size:1.3rem;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+h3{color:#fff;font-size:1.05rem;margin:1.5rem 0 .75rem}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:3px;font-size:.75rem;font-weight:600;margin-right:.5rem}
+.badge-accent{background:var(--accent);color:#fff}
+.badge-success{background:var(--success);color:#fff}
+.badge-info{background:var(--info);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1rem 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.25rem}
+.card h4{color:#fff;margin-bottom:.5rem;font-size:.95rem}
+.card p{color:var(--muted);font-size:.85rem}
+.card .num{font-size:1.8rem;color:var(--accent);font-weight:700}
+.diagram{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2rem;margin:1.5rem 0;overflow-x:auto}
+.flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem}
+.flow-box{background:var(--card);border:2px solid var(--accent);border-radius:6px;padding:.75rem 1.25rem;text-align:center;min-width:140px;font-size:.85rem;color:#fff}
+.flow-box.alt{border-color:var(--info)}
+.flow-box.green{border-color:var(--success)}
+.flow-box.warn{border-color:var(--warn)}
+.flow-arrow{color:var(--accent);font-size:1.5rem;font-weight:700}
+.table-wrap{overflow-x:auto;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--surface);color:var(--accent);text-align:left;padding:.75rem;border:1px solid var(--border)}
+td{padding:.75rem;border:1px solid var(--border);color:var(--text)}
+tr:hover td{background:var(--surface)}
+.checklist{list-style:none;margin:1rem 0}
+.checklist li{padding:.4rem 0;padding-left:1.5rem;position:relative;font-size:.9rem}
+.checklist li::before{content:"[ ]";position:absolute;left:0;color:var(--accent);font-weight:700}
+code{background:var(--surface);padding:.15rem .4rem;border-radius:3px;font-size:.85rem;color:var(--accent)}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:1rem 0}
+.section{margin-bottom:2rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}}
+footer{border-top:1px solid var(--border);margin-top:3rem;padding:2rem 0;color:var(--muted);font-size:.8rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+<h1>terraform-aws-rds-aurora</h1>
+<p>Architecture Document &mdash; Production-Grade AWS Aurora Cluster Module</p>
+<p><span class="badge badge-accent">Terraform &ge; 1.5.0</span><span class="badge badge-info">AWS Provider &ge; 5.20.0</span><span class="badge badge-success">MIT License</span></p>
+</header>
+
+<!-- Executive Summary -->
+<section class="section">
+<h2>Executive Summary</h2>
+<p>This Terraform module deploys production-grade Amazon Aurora clusters supporting both MySQL and PostgreSQL engines. It provides a comprehensive feature set including global databases for cross-region failover, RDS Proxy for connection pooling, Activity Streams for audit compliance, auto-scaling read replicas, serverless configurations, enhanced monitoring, Performance Insights, and security best practices with KMS encryption, IAM authentication, and Secrets Manager integration.</p>
+</section>
+
+<!-- Overview Cards -->
+<section class="section">
+<h2>Overview</h2>
+<div class="cards">
+<div class="card"><div class="num">2</div><h4>Engine Support</h4><p>Aurora MySQL and Aurora PostgreSQL with configurable versions</p></div>
+<div class="card"><div class="num">10+</div><h4>Resources Managed</h4><p>Cluster, instances, proxy, global DB, SG, parameter groups, monitoring, auto-scaling</p></div>
+<div class="card"><div class="num">35</div><h4>Input Variables</h4><p>Cluster, auth, network, encryption, backup, monitoring, scaling, global DB config</p></div>
+<div class="card"><div class="num">19</div><h4>Outputs</h4><p>Endpoints, ARNs, proxy, global cluster, SG, monitoring, parameter groups</p></div>
+</div>
+</section>
+
+<!-- Architecture Diagram -->
+<section class="section">
+<h2>Architecture Diagram</h2>
+<div class="diagram">
+<h3 style="text-align:center;margin-bottom:1.5rem;color:var(--muted)">Global Database Architecture</h3>
+<div class="flow">
+<div class="flow-box warn">Global Cluster<br>(Cross-Region)</div>
+<div class="flow-arrow">&rarr;</div>
+<div class="flow-box">Primary Region<br>Aurora Cluster</div>
+<div class="flow-arrow">&rarr;</div>
+<div class="flow-box alt">Secondary Region<br>Aurora Cluster</div>
+</div>
+<h3 style="text-align:center;margin:2rem 0 1.5rem;color:var(--muted)">Cluster Connectivity</h3>
+<div class="flow">
+<div class="flow-box">Application</div>
+<div class="flow-arrow">&rarr;</div>
+<div class="flow-box alt">RDS Proxy<br>(TLS / IAM)</div>
+<div class="flow-arrow">&rarr;</div>
+<div class="flow-box green">Security<br>Group</div>
+<div class="flow-arrow">&rarr;</div>
+<div class="flow-box">Writer<br>Instance</div>
+<div class="flow-arrow">&rarr;</div>
+<div class="flow-box">Reader<br>Instance(s)</div>
+</div>
+<h3 style="text-align:center;margin:2rem 0 1.5rem;color:var(--muted)">Supporting Infrastructure</h3>
+<div class="flow">
+<div class="flow-box green">DB Subnet<br>Group</div>
+<div class="flow-box warn">Cluster Param<br>Group</div>
+<div class="flow-box warn">Instance Param<br>Group</div>
+<div class="flow-box alt">Enhanced<br>Monitoring</div>
+<div class="flow-box alt">Performance<br>Insights</div>
+<div class="flow-box">Activity<br>Streams</div>
+</div>
+</div>
+</section>
+
+<!-- Component Breakdown -->
+<section class="section">
+<h2>Component Breakdown</h2>
+<div class="table-wrap">
+<table>
+<tr><th>Resource</th><th>Purpose</th></tr>
+<tr><td><code>aws_rds_global_cluster.this</code></td><td>Global database for cross-region replication and automated failover</td></tr>
+<tr><td><code>aws_db_subnet_group.this</code></td><td>Multi-AZ subnet group for cluster placement (minimum 2 subnets)</td></tr>
+<tr><td><code>aws_rds_cluster_parameter_group.this</code></td><td>Cluster-level parameter group with dynamic parameters and lifecycle management</td></tr>
+<tr><td><code>aws_db_parameter_group.this</code></td><td>Instance-level parameter group for per-instance tuning</td></tr>
+<tr><td><code>aws_rds_cluster.this</code></td><td>Aurora cluster with encryption, backups, IAM auth, Secrets Manager, CloudWatch logs</td></tr>
+<tr><td><code>aws_rds_cluster_instance.this</code></td><td>Provisioned instances (1-15) with monitoring, Performance Insights, promotion tiers</td></tr>
+<tr><td><code>aws_rds_cluster_activity_stream.this</code></td><td>Real-time database activity monitoring via Kinesis Data Streams</td></tr>
+<tr><td><code>aws_appautoscaling_target/policy</code></td><td>Auto-scaling read replicas based on CPU utilisation target tracking</td></tr>
+<tr><td><code>aws_security_group.this</code></td><td>Least-privilege security group limited to database port from specified sources</td></tr>
+<tr><td><code>aws_iam_role.monitoring</code></td><td>IAM role for Enhanced Monitoring metrics collection</td></tr>
+</table>
+</div>
+</section>
+
+<!-- Data Flow -->
+<section class="section">
+<h2>Data Flow</h2>
+<div class="diagram">
+<ol style="list-style:decimal inside;color:var(--text);font-size:.9rem;line-height:2">
+<li><strong>Application</strong> connects via RDS Proxy (if enabled) or directly to the cluster endpoint</li>
+<li><strong>RDS Proxy</strong> handles connection pooling, TLS termination, and IAM authentication</li>
+<li><strong>Security Group</strong> validates source against allowed SG IDs and CIDR blocks on database port only</li>
+<li><strong>Writer Instance</strong> handles all write operations; changes are replicated to reader instances</li>
+<li><strong>Reader Instances</strong> serve read-only queries via the reader endpoint with auto-scaling</li>
+<li><strong>Auto-scaling</strong> adjusts reader count (min/max) based on CPU utilisation target (default: 70%)</li>
+<li><strong>Global Cluster</strong> replicates data across regions with sub-second replication lag</li>
+<li><strong>Activity Streams</strong> publish database activity events to Kinesis for audit/compliance</li>
+<li><strong>Enhanced Monitoring</strong> collects OS-level metrics at configurable intervals (1-60 seconds)</li>
+<li><strong>Performance Insights</strong> captures query-level performance data with configurable retention</li>
+</ol>
+</div>
+</section>
+
+<!-- Security Controls -->
+<section class="section">
+<h2>Security Controls</h2>
+<div class="grid-3">
+<div class="card">
+<h4>Encryption at Rest</h4>
+<p>Storage encryption enabled by default. Supports customer-managed KMS keys for key rotation control.</p>
+</div>
+<div class="card">
+<h4>Encryption in Transit</h4>
+<p>RDS Proxy enforces TLS by default. SSL/TLS natively supported on Aurora connections.</p>
+</div>
+<div class="card">
+<h4>IAM Authentication</h4>
+<p>Enabled by default. Authenticate with IAM roles instead of database passwords.</p>
+</div>
+<div class="card">
+<h4>Secrets Manager</h4>
+<p>Master password managed by Secrets Manager with automatic rotation (default: enabled).</p>
+</div>
+<div class="card">
+<h4>Security Groups</h4>
+<p>Least-privilege ingress: database port only from specified SG IDs and CIDR blocks.</p>
+</div>
+<div class="card">
+<h4>Activity Streams</h4>
+<p>Real-time audit trail via Kinesis. KMS-encrypted. Supports sync and async modes.</p>
+</div>
+<div class="card">
+<h4>Deletion Protection</h4>
+<p>Enabled by default. Final snapshot taken on deletion unless explicitly skipped.</p>
+</div>
+<div class="card">
+<h4>Private Access</h4>
+<p>Instances set to publicly_accessible = false. Only accessible within VPC.</p>
+</div>
+<div class="card">
+<h4>Backup</h4>
+<p>Automated backups with 7-day retention (configurable up to 35 days). Tags copied to snapshots.</p>
+</div>
+</div>
+</section>
+
+<!-- Industry Adaptation -->
+<section class="section">
+<h2>Industry Adaptation</h2>
+<div class="table-wrap">
+<table>
+<tr><th>Industry</th><th>Use Case</th><th>Configuration Focus</th></tr>
+<tr><td>Financial Services</td><td>Transaction processing with audit trail</td><td>Activity Streams (sync), Global DB, 35-day backups, KMS CMK, deletion protection</td></tr>
+<tr><td>Healthcare</td><td>HIPAA-compliant patient data store</td><td>IAM auth, KMS encryption, Enhanced Monitoring, no public access, SG lockdown</td></tr>
+<tr><td>E-Commerce</td><td>High-read product catalogue</td><td>RDS Proxy, auto-scaling readers (2-8), Performance Insights, Aurora MySQL</td></tr>
+<tr><td>SaaS</td><td>Multi-tenant application database</td><td>RDS Proxy connection pooling, Aurora PostgreSQL, auto-scaling, serverless option</td></tr>
+<tr><td>Gaming</td><td>Low-latency session and leaderboard data</td><td>Global DB for latency-based routing, provisioned instances, high IOPS</td></tr>
+</table>
+</div>
+</section>
+
+<!-- Production Readiness Checklist -->
+<section class="section">
+<h2>Production Readiness Checklist</h2>
+<ul class="checklist">
+<li>Enable storage encryption with customer-managed KMS key</li>
+<li>Use manage_master_user_password = true (Secrets Manager)</li>
+<li>Deploy minimum 2 instances across different AZs</li>
+<li>Enable deletion protection and disable skip_final_snapshot</li>
+<li>Set backup_retention_period to at least 7 days (35 for compliance)</li>
+<li>Enable Enhanced Monitoring and Performance Insights</li>
+<li>Configure CloudWatch log exports for your engine type</li>
+<li>Enable RDS Proxy with TLS for connection pooling</li>
+<li>Enable auto-scaling for read replicas with appropriate min/max</li>
+<li>Configure allowed_security_group_ids (avoid open CIDR blocks)</li>
+<li>Enable Activity Streams for regulated workloads</li>
+<li>Consider Global Database for disaster recovery requirements</li>
+<li>Tune cluster and instance parameter groups for workload</li>
+<li>Set up CloudWatch alarms for CPU, connections, and replication lag</li>
+<li>Tag all resources for cost allocation</li>
+</ul>
+</section>
+
+<!-- Config Reference -->
+<section class="section">
+<h2>Configuration Reference</h2>
+<h3>Key Variables</h3>
+<div class="table-wrap">
+<table>
+<tr><th>Variable</th><th>Type</th><th>Default</th><th>Description</th></tr>
+<tr><td><code>cluster_identifier</code></td><td>string</td><td>&mdash;</td><td>Aurora cluster identifier (required)</td></tr>
+<tr><td><code>engine</code></td><td>string</td><td>&mdash;</td><td>aurora-mysql or aurora-postgresql (required)</td></tr>
+<tr><td><code>engine_version</code></td><td>string</td><td>&mdash;</td><td>Engine version (required)</td></tr>
+<tr><td><code>engine_mode</code></td><td>string</td><td>provisioned</td><td>provisioned or serverless</td></tr>
+<tr><td><code>master_username</code></td><td>string</td><td>&mdash;</td><td>Master database username</td></tr>
+<tr><td><code>manage_master_user_password</code></td><td>bool</td><td>true</td><td>Use Secrets Manager for password</td></tr>
+<tr><td><code>instance_count</code></td><td>number</td><td>2</td><td>Number of cluster instances (1-15)</td></tr>
+<tr><td><code>instance_class</code></td><td>string</td><td>db.r6g.large</td><td>Instance class</td></tr>
+<tr><td><code>storage_encrypted</code></td><td>bool</td><td>true</td><td>Enable encryption at rest</td></tr>
+<tr><td><code>backup_retention_period</code></td><td>number</td><td>7</td><td>Backup retention (1-35 days)</td></tr>
+<tr><td><code>enable_deletion_protection</code></td><td>bool</td><td>true</td><td>Prevent accidental deletion</td></tr>
+<tr><td><code>enable_rds_proxy</code></td><td>bool</td><td>false</td><td>Create RDS Proxy</td></tr>
+<tr><td><code>enable_global_cluster</code></td><td>bool</td><td>false</td><td>Create global database</td></tr>
+<tr><td><code>autoscaling_enabled</code></td><td>bool</td><td>false</td><td>Enable read replica auto-scaling</td></tr>
+<tr><td><code>autoscaling_target_cpu</code></td><td>number</td><td>70</td><td>Target CPU % for auto-scaling</td></tr>
+<tr><td><code>enable_activity_stream</code></td><td>bool</td><td>false</td><td>Enable Activity Streams</td></tr>
+</table>
+</div>
+
+<h3>Key Outputs</h3>
+<div class="table-wrap">
+<table>
+<tr><th>Output</th><th>Description</th></tr>
+<tr><td><code>cluster_endpoint</code></td><td>Cluster writer endpoint</td></tr>
+<tr><td><code>reader_endpoint</code></td><td>Cluster reader endpoint for read-only connections</td></tr>
+<tr><td><code>proxy_endpoint</code></td><td>RDS Proxy endpoint (if enabled)</td></tr>
+<tr><td><code>security_group_id</code></td><td>Security group ID for the cluster</td></tr>
+<tr><td><code>global_cluster_id</code></td><td>Global cluster identifier (if enabled)</td></tr>
+<tr><td><code>activity_stream_kinesis_stream_name</code></td><td>Kinesis stream for activity (if enabled)</td></tr>
+</table>
+</div>
+
+<h3>Cost Estimation</h3>
+<div class="table-wrap">
+<table>
+<tr><th>Component</th><th>Approximate Monthly Cost</th></tr>
+<tr><td>db.r6g.large (2 instances)</td><td>~$400</td></tr>
+<tr><td>db.r6g.xlarge (3 instances)</td><td>~$1,200</td></tr>
+<tr><td>db.r6g.2xlarge (3 instances)</td><td>~$2,400</td></tr>
+<tr><td>RDS Proxy</td><td>~$150</td></tr>
+<tr><td>Activity Streams</td><td>~$50</td></tr>
+<tr><td>Performance Insights (7 days)</td><td>Free</td></tr>
+<tr><td>Global database replication</td><td>~$200</td></tr>
+</table>
+</div>
+</section>
+
+<!-- Deployment -->
+<section class="section">
+<h2>Deployment</h2>
+<pre>
+module "aurora" {
+  source = "kogunlowo123/rds-aurora/aws"
+
+  cluster_identifier = "my-aurora-cluster"
+  engine             = "aurora-postgresql"
+  engine_version     = "15.4"
+
+  master_username             = "dbadmin"
+  manage_master_user_password = true
+  database_name               = "myapp"
+
+  vpc_id     = "vpc-0123456789abcdef0"
+  subnet_ids = ["subnet-aaa", "subnet-bbb", "subnet-ccc"]
+
+  instance_count = 2
+  instance_class = "db.r6g.large"
+
+  enable_rds_proxy       = true
+  autoscaling_enabled    = true
+  autoscaling_max_capacity = 5
+
+  tags = {
+    Environment = "production"
+  }
+}
+</pre>
+<pre>
+terraform init
+terraform plan
+terraform apply
+</pre>
+</section>
+
+<!-- Links -->
+<section class="section">
+<h2>Links</h2>
+<ul style="list-style:none;line-height:2.2">
+<li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/">Amazon Aurora Documentation</a></li>
+<li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html">Aurora Global Database</a></li>
+<li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/rds-proxy.html">RDS Proxy</a></li>
+<li><a href="https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/DBActivityStreams.html">Database Activity Streams</a></li>
+<li><a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_cluster">Terraform: aws_rds_cluster</a></li>
+<li><a href="https://calculator.aws.amazon.com/">AWS Pricing Calculator</a></li>
+</ul>
+</section>
+
+<footer>
+<p>terraform-aws-rds-aurora &middot; Architecture Document</p>
+<p>Generated for reference purposes. Review all configurations before production deployment.</p>
+</footer>
+
+</div>
+</body>
+</html>
