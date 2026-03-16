@@ -1,7 +1,3 @@
-################################################################################
-# Cluster
-################################################################################
-
 variable "cluster_identifier" {
   description = "The identifier for the Aurora cluster."
   type        = string
@@ -13,7 +9,7 @@ variable "cluster_identifier" {
 }
 
 variable "engine" {
-  description = "The Aurora database engine type."
+  description = "The Aurora database engine type (aurora-mysql or aurora-postgresql)."
   type        = string
 
   validation {
@@ -28,7 +24,7 @@ variable "engine_version" {
 }
 
 variable "engine_mode" {
-  description = "The database engine mode."
+  description = "The database engine mode (provisioned or serverless)."
   type        = string
   default     = "provisioned"
 
@@ -37,10 +33,6 @@ variable "engine_mode" {
     error_message = "Engine mode must be either 'provisioned' or 'serverless'."
   }
 }
-
-################################################################################
-# Authentication
-################################################################################
 
 variable "master_username" {
   description = "Username for the master database user."
@@ -59,7 +51,7 @@ variable "manage_master_user_password" {
 }
 
 variable "master_password" {
-  description = "Password for the master database user. Required if manage_master_user_password is false."
+  description = "Password for the master database user; required if manage_master_user_password is false."
   type        = string
   default     = null
   sensitive   = true
@@ -70,10 +62,6 @@ variable "master_password" {
   }
 }
 
-################################################################################
-# Database
-################################################################################
-
 variable "database_name" {
   description = "Name for the automatically created database on cluster creation."
   type        = string
@@ -81,7 +69,7 @@ variable "database_name" {
 }
 
 variable "port" {
-  description = "The port on which the database accepts connections."
+  description = "The port on which the database accepts connections (1024-65535)."
   type        = number
   default     = null
 
@@ -90,10 +78,6 @@ variable "port" {
     error_message = "Port must be between 1024 and 65535."
   }
 }
-
-################################################################################
-# Network
-################################################################################
 
 variable "vpc_id" {
   description = "The ID of the VPC where the Aurora cluster will be deployed."
@@ -106,7 +90,7 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "List of subnet IDs for the Aurora DB subnet group."
+  description = "List of subnet IDs for the Aurora DB subnet group (minimum 2)."
   type        = list(string)
 
   validation {
@@ -127,12 +111,8 @@ variable "allowed_cidr_blocks" {
   default     = []
 }
 
-################################################################################
-# Instances
-################################################################################
-
 variable "instance_count" {
-  description = "Number of Aurora cluster instances to create."
+  description = "Number of Aurora cluster instances to create (1-15)."
   type        = number
   default     = 2
 
@@ -148,10 +128,6 @@ variable "instance_class" {
   default     = "db.r6g.large"
 }
 
-################################################################################
-# Encryption
-################################################################################
-
 variable "storage_encrypted" {
   description = "Whether the Aurora cluster storage is encrypted."
   type        = bool
@@ -159,17 +135,13 @@ variable "storage_encrypted" {
 }
 
 variable "kms_key_arn" {
-  description = "ARN of the KMS key to use for encryption. If not specified, the default AWS managed key is used."
+  description = "ARN of the KMS key to use for encryption; uses default AWS managed key if not specified."
   type        = string
   default     = null
 }
 
-################################################################################
-# Backup & Maintenance
-################################################################################
-
 variable "backup_retention_period" {
-  description = "Number of days to retain backups."
+  description = "Number of days to retain backups (1-35)."
   type        = number
   default     = 7
 
@@ -191,10 +163,6 @@ variable "preferred_maintenance_window" {
   default     = "sun:05:00-sun:06:00"
 }
 
-################################################################################
-# Protection
-################################################################################
-
 variable "enable_deletion_protection" {
   description = "Whether deletion protection is enabled on the Aurora cluster."
   type        = bool
@@ -207,19 +175,11 @@ variable "skip_final_snapshot" {
   default     = false
 }
 
-################################################################################
-# Authentication & Security
-################################################################################
-
 variable "iam_database_authentication_enabled" {
   description = "Whether IAM database authentication is enabled."
   type        = bool
   default     = true
 }
-
-################################################################################
-# Performance & Monitoring
-################################################################################
 
 variable "enable_performance_insights" {
   description = "Whether Performance Insights is enabled for cluster instances."
@@ -245,7 +205,7 @@ variable "enable_enhanced_monitoring" {
 }
 
 variable "monitoring_interval" {
-  description = "The interval, in seconds, between points when Enhanced Monitoring metrics are collected."
+  description = "Interval in seconds between Enhanced Monitoring metrics collection."
   type        = number
   default     = 60
 
@@ -256,20 +216,16 @@ variable "monitoring_interval" {
 }
 
 variable "auto_minor_version_upgrade" {
-  description = "Whether minor engine upgrades are applied automatically during the maintenance window."
+  description = "Whether minor engine upgrades are applied automatically during maintenance."
   type        = bool
   default     = true
 }
 
 variable "enabled_cloudwatch_logs_exports" {
-  description = "List of log types to export to CloudWatch. For MySQL: audit, error, general, slowquery. For PostgreSQL: postgresql."
+  description = "List of log types to export to CloudWatch (MySQL: audit, error, general, slowquery; PostgreSQL: postgresql)."
   type        = list(string)
   default     = []
 }
-
-################################################################################
-# Global Database
-################################################################################
 
 variable "enable_global_cluster" {
   description = "Whether to create a global Aurora cluster for cross-region replication."
@@ -283,10 +239,6 @@ variable "global_cluster_identifier" {
   default     = null
 }
 
-################################################################################
-# RDS Proxy
-################################################################################
-
 variable "enable_rds_proxy" {
   description = "Whether to create an RDS Proxy for the Aurora cluster."
   type        = bool
@@ -294,7 +246,7 @@ variable "enable_rds_proxy" {
 }
 
 variable "proxy_idle_client_timeout" {
-  description = "The number of seconds that a connection to the proxy can be inactive before the proxy disconnects it."
+  description = "Seconds a proxy connection can be inactive before disconnect (60-28800)."
   type        = number
   default     = 1800
 
@@ -310,10 +262,6 @@ variable "proxy_require_tls" {
   default     = true
 }
 
-################################################################################
-# Activity Stream
-################################################################################
-
 variable "enable_activity_stream" {
   description = "Whether to enable database activity streams on the Aurora cluster."
   type        = bool
@@ -321,7 +269,7 @@ variable "enable_activity_stream" {
 }
 
 variable "activity_stream_mode" {
-  description = "The mode of the database activity stream. Valid values: sync, async."
+  description = "The mode of the database activity stream (sync or async)."
   type        = string
   default     = "async"
 
@@ -330,10 +278,6 @@ variable "activity_stream_mode" {
     error_message = "Activity stream mode must be either 'sync' or 'async'."
   }
 }
-
-################################################################################
-# Serverless Scaling
-################################################################################
 
 variable "scaling_configuration" {
   description = "Scaling configuration for Aurora Serverless."
@@ -349,10 +293,6 @@ variable "scaling_configuration" {
     error_message = "min_capacity must be less than or equal to max_capacity."
   }
 }
-
-################################################################################
-# Auto Scaling
-################################################################################
 
 variable "autoscaling_enabled" {
   description = "Whether to enable auto-scaling for Aurora read replicas."
@@ -377,10 +317,6 @@ variable "autoscaling_target_cpu" {
   type        = number
   default     = 70
 }
-
-################################################################################
-# Parameter Groups
-################################################################################
 
 variable "cluster_parameter_group_family" {
   description = "The family of the cluster parameter group (e.g., aurora-mysql8.0, aurora-postgresql15)."
@@ -407,10 +343,6 @@ variable "instance_parameter_group_parameters" {
   }))
   default = []
 }
-
-################################################################################
-# Tags
-################################################################################
 
 variable "tags" {
   description = "A map of tags to apply to all resources."

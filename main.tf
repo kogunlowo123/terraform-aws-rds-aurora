@@ -1,19 +1,4 @@
 ################################################################################
-# Locals
-################################################################################
-
-locals {
-  port = coalesce(var.port, var.engine == "aurora-mysql" ? 3306 : 5432)
-
-  cluster_parameter_group_family = coalesce(
-    var.cluster_parameter_group_family,
-    var.engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql15"
-  )
-
-  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.cluster_identifier}-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-}
-
-################################################################################
 # Global Cluster
 ################################################################################
 
@@ -47,7 +32,7 @@ resource "aws_db_subnet_group" "this" {
 
 resource "aws_rds_cluster_parameter_group" "this" {
   name        = "${var.cluster_identifier}-cluster-params"
-  family      = local.cluster_parameter_group_family
+  family      = coalesce(var.cluster_parameter_group_family, var.engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql15")
   description = "Cluster parameter group for ${var.cluster_identifier}"
 
   dynamic "parameter" {
@@ -74,7 +59,7 @@ resource "aws_rds_cluster_parameter_group" "this" {
 
 resource "aws_db_parameter_group" "this" {
   name        = "${var.cluster_identifier}-instance-params"
-  family      = local.cluster_parameter_group_family
+  family      = coalesce(var.cluster_parameter_group_family, var.engine == "aurora-mysql" ? "aurora-mysql8.0" : "aurora-postgresql15")
   description = "Instance parameter group for ${var.cluster_identifier}"
 
   dynamic "parameter" {
@@ -109,7 +94,7 @@ resource "aws_rds_cluster" "this" {
 
   database_name   = var.database_name
   master_username = var.master_username
-  port            = local.port
+  port            = coalesce(var.port, var.engine == "aurora-mysql" ? 3306 : 5432)
 
   manage_master_user_password = var.manage_master_user_password ? true : null
   master_password             = var.manage_master_user_password ? null : var.master_password
@@ -127,7 +112,7 @@ resource "aws_rds_cluster" "this" {
 
   deletion_protection       = var.enable_deletion_protection
   skip_final_snapshot       = var.skip_final_snapshot
-  final_snapshot_identifier = local.final_snapshot_identifier
+  final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.cluster_identifier}-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
 
   iam_database_authentication_enabled = var.iam_database_authentication_enabled
 
